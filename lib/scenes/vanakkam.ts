@@ -1,6 +1,7 @@
 // /7: the vanakkam meme. He rises in with folded hands against a night sky of
-// fireworks; "HAPPY DIWALI" slams in with a 💣 on each A (as in the original meme),
-// the bombs go off one after the other, and the name lands in fire lettering.
+// fireworks; the Tamil wish "Kumbudu Guruswamy Yin Deepavali Vazhuthukal" slams in
+// line by line in gold, with a 💣 on the A of GURUSWAMY and of DEEPAVALI (as in the
+// original meme). The bombs go off one after the other, then the name lands in fire.
 // The hero is a cut-out (public/vanakkam/hero.webp) drawn over a painted sky.
 import { ctxOf, easeInOut, easeOutBack, fitter, glows, H, img, nameLines, seeded, span, W, type Ctx, type MakeCanvas, type Off, type Scene } from "../kit";
 
@@ -19,9 +20,16 @@ const HEAD = { x: HERO_X + 600 * (HERO_W / HERO_SRC.w), y: HERO_Y + 300 * (HERO_
 // text column on the right
 const COL = { x: 1000, w: 500 };
 const SKEW = -0.2; // italic slant, like the original poster
-const T_HAPPY = 0.45;
-const T_DIWALI = 0.7;
-const T_NAME = 1.05;
+const TITLE = ["KUMBUDU", "GURUSWAMY YIN", "DEEPAVALI", "VAZHUTHUKAL"];
+const TITLE_MAX = 84;
+const TITLE_Y0 = 105;
+const TITLE_LEAD = 1.02;
+const T_TITLE0 = 0.45;
+const T_TITLE_STEP = 0.15;
+const T_NAME = T_TITLE0 + TITLE.length * T_TITLE_STEP + 0.05;
+const NAME_MAX = 165;
+const NAME_BOTTOM = 690; // a two-line name must end above this
+const titleT = (i: number) => T_TITLE0 + i * T_TITLE_STEP;
 const T_BOOM = [2.6, 2.9]; // the two bombs
 const LIFE = 1.45; // seconds a firework spark lives
 const PERIOD = VANAKKAM.duration - VANAKKAM.loopFrom; // the page loop
@@ -144,28 +152,33 @@ export function createVanakkamScene(rawName: string, makeCanvas: MakeCanvas, her
     return { c, letterX, size };
   }
 
-  const titleSize = Math.min(fit("HAPPY", font, 118, COL.w - 40), fit("DIWALI", font, 118, COL.w - 40));
-  const happy = letters("HAPPY", titleSize, GOLD);
-  const diwali = letters("DIWALI", titleSize, GOLD);
-  const HAPPY_Y = 150;
-  const DIWALI_Y = HAPPY_Y + titleSize * 1.02;
+  const titleSize = Math.min(TITLE_MAX, ...TITLE.map((l) => fit(l, font, TITLE_MAX, COL.w - 40)));
+  const titleBlocks = TITLE.map((l) => letters(l, titleSize, GOLD));
+  const titleY = TITLE.map((_, i) => TITLE_Y0 + i * titleSize * TITLE_LEAD);
+  const LAST_TITLE_Y = titleY[titleY.length - 1];
 
   const upper = name.toLocaleUpperCase();
-  const nameFits = (line: string) => fit(line, font, 165, COL.w + 10);
+  const nameFits = (line: string) => fit(line, font, NAME_MAX, COL.w + 10);
   const lines = name ? nameLines(upper, nameFits, 70) : [];
-  const nameSize = lines.length ? Math.min(...lines.map(nameFits)) : 0;
+  // name block spans 0.72 + 1.05 per extra line + 0.6 of its size below the title gap
+  const nameRoom = (NAME_BOTTOM - (LAST_TITLE_Y + titleSize * 0.55)) / (0.72 + (Math.max(lines.length, 1) - 1) * 1.05 + 0.6);
+  const nameSize = lines.length ? Math.floor(Math.min(nameRoom, ...lines.map(nameFits))) : 0;
   const nameBlocks = lines.map((l) => letters(l, nameSize, FIRE));
-  const NAME_Y = DIWALI_Y + titleSize * 0.55 + nameSize * 0.72;
+  const NAME_Y = LAST_TITLE_Y + titleSize * 0.55 + nameSize * 0.72;
 
-  // 💣 on the A of each word; cap-height top of the letter, with the slant applied
+  // 💣 sitting on an A (it covers the letter until it goes off); the lines are tight,
+  // so the bomb scales with the lettering and is centred on the letter, slant applied
   const bombAt = (b: Block, i: number, cy: number) => {
-    const capTop = b.size * 0.36;
-    return { x: COL.x + b.letterX[i] - SKEW * capTop, y: cy - capTop - 26 };
+    const dy = b.size * 0.02;
+    return { x: COL.x + b.letterX[i] - SKEW * dy, y: cy - dy, z: b.size * 0.017 };
   };
-  const bombs = [
-    { ...bombAt(happy, 1, HAPPY_Y), t0: T_HAPPY + 0.25, tBoom: T_BOOM[0], rot: -0.35 },
-    { ...bombAt(diwali, 3, DIWALI_Y), t0: T_DIWALI + 0.25, tBoom: T_BOOM[1], rot: 0.3 },
-  ];
+  // find the letter in the string: the first A of the given word
+  const bombOn = (word: string, rot: number, tBoom: number) => {
+    const li = TITLE.findIndex((l) => l.includes(word));
+    const ci = TITLE[li].indexOf(word) + word.indexOf("A");
+    return { ...bombAt(titleBlocks[li], ci, titleY[li]), t0: titleT(li) + 0.25, tBoom, rot };
+  };
+  const bombs = [bombOn("GURUSWAMY", -0.35, T_BOOM[0]), bombOn("DEEPAVALI", 0.3, T_BOOM[1])];
 
   // ---------- fireworks timeline ----------
   // Bursts in the loop window repeat every PERIOD, and copies shifted one period
@@ -255,7 +268,7 @@ export function createVanakkamScene(rawName: string, makeCanvas: MakeCanvas, her
 
   function shake(t: number) {
     let a = 0;
-    for (const ts of [T_HAPPY + 0.28, T_DIWALI + 0.28, T_NAME + 0.28]) if (t > ts && t < ts + 0.16) a += 5 * (1 - (t - ts) / 0.16);
+    for (const ts of [...TITLE.map((_, i) => titleT(i)), T_NAME].map((x) => x + 0.28)) if (t > ts && t < ts + 0.16) a += 5 * (1 - (t - ts) / 0.16);
     for (const ts of T_BOOM) if (t > ts && t < ts + 0.4) a += 13 * (1 - (t - ts) / 0.4);
     return { x: Math.sin(t * 97) * a, y: Math.cos(t * 83) * a };
   }
@@ -287,9 +300,9 @@ export function createVanakkamScene(rawName: string, makeCanvas: MakeCanvas, her
     // swells just before it goes
     const swell = 1 + 0.25 * span(t, b.tBoom - 0.35, b.tBoom) + 0.04 * Math.sin(t * 40) * span(t, b.tBoom - 0.6, b.tBoom);
     ctx.save();
-    ctx.translate(b.x, b.y - (1 - k) * 60);
+    ctx.translate(b.x, b.y - (1 - k) * 40);
     ctx.rotate(b.rot);
-    ctx.scale(1.45 * k * swell, 1.45 * k * swell);
+    ctx.scale(b.z * k * swell, b.z * k * swell);
     // body
     const g = ctx.createRadialGradient(-7, -7, 2, 0, 0, 24);
     g.addColorStop(0, "#5a5f6e");
@@ -317,9 +330,9 @@ export function createVanakkamScene(rawName: string, makeCanvas: MakeCanvas, her
     ctx.stroke();
     ctx.restore();
     // the lit fuse spark (in screen space so it stays round)
-    const z = 1.45 * k * swell;
+    const z = b.z * k * swell;
     const fx = b.x + Math.cos(b.rot) * 13 * z - Math.sin(b.rot) * -42 * z;
-    const fy = b.y - (1 - k) * 60 + Math.sin(b.rot) * 13 * z + Math.cos(b.rot) * -42 * z;
+    const fy = b.y - (1 - k) * 40 + Math.sin(b.rot) * 13 * z + Math.cos(b.rot) * -42 * z;
     ctx.globalCompositeOperation = "lighter";
     const fl = 1 + 0.35 * Math.sin(t * 53) + 0.2 * Math.sin(t * 31);
     ctx.drawImage(glow("rgba(255,170,60,1)"), fx - 26 * fl, fy - 26 * fl, 52 * fl, 52 * fl);
@@ -407,8 +420,7 @@ export function createVanakkamScene(rawName: string, makeCanvas: MakeCanvas, her
     }
 
     // lettering
-    slam(ctx, happy, HAPPY_Y, T_HAPPY, t, -0.04);
-    slam(ctx, diwali, DIWALI_Y, T_DIWALI, t, 0.02);
+    titleBlocks.forEach((b, i) => slam(ctx, b, titleY[i], titleT(i), t, i % 2 ? 0.02 : -0.04));
     nameBlocks.forEach((b, i) => slam(ctx, b, NAME_Y + i * nameSize * 1.05, T_NAME + i * 0.12, t, -0.03));
 
     for (const b of bombs) drawSmoke(ctx, b, t);
@@ -433,6 +445,6 @@ export function createVanakkamScene(rawName: string, makeCanvas: MakeCanvas, her
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
-  const last = nameBlocks.length ? NAME_Y + (nameBlocks.length - 1) * nameSize * 1.05 + nameSize * 0.6 : DIWALI_Y + titleSize * 0.6;
+  const last = nameBlocks.length ? NAME_Y + (nameBlocks.length - 1) * nameSize * 1.05 + nameSize * 0.6 : LAST_TITLE_Y + titleSize * 0.6;
   return { draw, name, textBottom: Math.min(H, last) };
 }
