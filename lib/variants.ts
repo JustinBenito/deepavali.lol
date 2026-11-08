@@ -1,6 +1,6 @@
 // Every greeting type, its URL prefix (/<prefix>/<name>) and its copy.
 // Safe to import from both server and browser code.
-export const VARIANTS = ["diwali", "meme", "diya", "rangoli", "sparkler", "mithai", "dhamaka"] as const;
+export const VARIANTS = ["diwali", "meme", "diya", "rangoli", "sparkler", "mithai", "dhamaka", "vanakkam"] as const;
 export type Variant = (typeof VARIANTS)[number];
 
 type Info = {
@@ -25,6 +25,7 @@ export const VARIANT_INFO: Record<Variant, Info> = {
   sparkler: { prefix: "4", emoji: "✨", blurb: "Written in sparkler light, just for you. Write one at {site}", ask: "Write one for someone", button: "Write their name" },
   mithai: { prefix: "5", emoji: "🍬", blurb: "A box of Diwali sweets, just for you. Send some at {site}", ask: "Send sweets to someone", button: "Send their mithai" },
   dhamaka: { prefix: "6", emoji: "💥", blurb: "Full dhamaka Diwali wishes. Send one at {site}", ask: "Send a dhamaka to someone", button: "Light the ladi" },
+  vanakkam: { prefix: "7", emoji: "🙏💣", blurb: "Vanakkam! Diwali wishes with folded hands and two bombs. Send one at {site}", ask: "Send a vanakkam to someone", button: "Light their bomb" },
 };
 
 export const PREFIX = Object.fromEntries(VARIANTS.map((v) => [v, VARIANT_INFO[v].prefix])) as Record<Variant, string>;
