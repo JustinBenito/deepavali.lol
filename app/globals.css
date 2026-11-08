@@ -1,0 +1,171 @@
+:root {
+  --bg: #07051a;
+  --ink: #fff4dc;
+  --muted: #c9b6d9;
+  --accent: #ffb347;
+  --card: rgba(255, 255, 255, 0.06);
+  --line: rgba(255, 220, 170, 0.18);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  min-height: 100dvh;
+  background: radial-gradient(ellipse at 50% 110%, #3a1240 0%, #170a33 45%, var(--bg) 80%);
+  color: var(--ink);
+  font-family: "DeepSemi", ui-sans-serif, system-ui, sans-serif;
+}
+@font-face { font-family: "DeepSemi"; src: url("/fonts/Poppins-SemiBold.ttf") format("truetype"); font-display: swap; }
+main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 32px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+}
+.stage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: 0 30px 80px -20px rgba(255, 140, 60, 0.35);
+  background: #07051a;
+  cursor: pointer;
+}
+.stage canvas { width: 100%; height: 100%; display: block; }
+.maker {
+  width: 100%;
+  background: rgba(20, 10, 40, 0.7);
+  display: flex;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 6px;
+}
+.maker input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  padding: 10px 12px;
+}
+.maker input::placeholder { color: var(--muted); opacity: 0.7; }
+.btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  background: linear-gradient(180deg, #ffd36b, #ff9f43);
+  color: #2a0d1f;
+  white-space: nowrap;
+  transition: opacity 0.3s;
+}
+.btn.ghost { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+.btn:disabled { opacity: 0.45; cursor: progress; }
+.player { position: relative; width: 100%; }
+.cta {
+  width: 100%;
+  margin-top: 20px;
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition: opacity 1.4s ease, transform 1.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.cta.on { opacity: 1; transform: none; pointer-events: auto; }
+/* Over the scene, in the room the wish leaves under the name: on desktop and on
+   phones (portrait scene). Below the scene only on small landscape screens. */
+.player.portrait .cta,
+.player.landscape .cta {
+  position: absolute;
+  left: 50%;
+  top: var(--cta-top, 66%);
+  width: min(580px, 74%);
+  margin: 0;
+  transform: translate(-50%, 14px);
+}
+.player.portrait .cta { width: 90%; }
+.player .cta.on { transform: translate(-50%, 0); }
+.player .cta::before {
+  content: "";
+  position: absolute;
+  inset: -40px -90px;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(8, 4, 20, 0.72), rgba(8, 4, 20, 0));
+  pointer-events: none;
+}
+.player.portrait .cta::before { inset: -40px -20px; }
+@media (max-width: 759px) {
+  .player.landscape .cta { position: static; width: 100%; margin-top: 20px; transform: translateY(14px); }
+  .player.landscape .cta.on { transform: none; }
+  .player.landscape .cta::before { display: none; }
+  main { padding: 12px 12px 32px; }
+}
+.send-on { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.send-on h2 {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 600;
+  color: #ffeccc;
+  text-align: center;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
+}
+.send-on h2 span { display: inline-block; white-space: pre; opacity: 0; transform: translateY(10px); }
+.cta.on .send-on h2 span { animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+.maker.nudge { animation: nudge 0.4s; }
+@keyframes nudge { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.made { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.made-title { margin: 0; font-size: 17px; color: #ffe2a8; text-align: center; }
+.made-row { display: flex; gap: 8px; align-items: center; max-width: 100%; }
+.made-row code {
+  color: var(--ink);
+  background: rgba(20, 10, 40, 0.75);
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  font-size: 14px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.status a, .linkish { color: #ffd36b; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; text-decoration: underline; }
+.status { width: 100%; margin: 0; text-align: center; color: var(--muted); font-size: 14px; }
+.spark {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffd36b;
+  box-shadow: 0 0 10px 3px rgba(255, 180, 70, 0.8);
+  margin-right: 6px;
+  animation: flicker 0.5s infinite alternate;
+}
+@keyframes flicker { from { opacity: 0.4; transform: scale(0.8); } to { opacity: 1; transform: scale(1.15); } }
+@keyframes rise { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .cta, .send-on h2 span { transition: none; animation: none !important; opacity: 1; transform: none; }
+  .spark { animation: none; }
+}
+.player.portrait .send-on h2 { font-size: clamp(16px, 4.6vw, 22px); }
+.credit {
+  text-align: center;
+  padding: 8px 16px 28px;
+  font-size: 13px;
+  color: var(--muted);
+  opacity: 0.8;
+}
+.credit a { color: #ffd36b; text-decoration: none; }
+.credit a:hover { text-decoration: underline; }
+.credit span { color: var(--muted); }
+/* The meme's foreground fills the frame, so its form sits below the video. */
+.player.below .cta { position: static; width: min(580px, 100%); margin: 20px auto 0; transform: translateY(14px); }
+.player.below .cta.on { transform: none; }
+.player.below .cta::before { display: none; }
