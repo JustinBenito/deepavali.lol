@@ -12,7 +12,7 @@ import type { Variant } from "./variants";
 export { VARIANTS, type Variant } from "./variants";
 
 // Bump when a scene changes so stored renders are replaced.
-export const RENDER_VERSION = "v13";
+export const RENDER_VERSION = "v14";
 
 export const totalFrames = (v: Variant) => Math.round(SCENES[v].duration * FPS);
 
