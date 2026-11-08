@@ -9,6 +9,7 @@ import { createDiyaScene, DIYA, FONT_SCRIPT } from "./diya";
 import { createMithaiScene, MITHAI, SWEETS_URL } from "./mithai";
 import { createRangoliScene, RANGOLI } from "./rangoli";
 import { createSparklerScene, SPARKLER } from "./sparkler";
+import { createVanakkamScene, VANAKKAM, VANAKKAM_HERO_URL } from "./vanakkam";
 
 export type SceneDef = {
   duration: number; // seconds of video
@@ -53,4 +54,5 @@ export const SCENES: Record<Variant, SceneDef> = {
   sparkler: { ...SPARKLER, fonts: [SCRIPT], images: () => [], create: (name, mk) => createSparklerScene(name, mk) },
   mithai: { ...MITHAI, fonts: [SCRIPT, ...POPPINS], images: () => [SWEETS_URL], create: (name, mk, [atlas]) => createMithaiScene(name, mk, atlas) },
   dhamaka: { ...DHAMAKA, fonts: [[FONT_COMIC, "Bangers-Regular.ttf"]], images: () => [], create: (name, mk) => createDhamakaScene(name, mk) },
+  vanakkam: { ...VANAKKAM, fonts: [POPPINS[0]], images: () => [VANAKKAM_HERO_URL], create: (name, mk, [hero]) => createVanakkamScene(name, mk, hero) },
 };

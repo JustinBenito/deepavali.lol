@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 // Every route that renders frames needs ffmpeg, the fonts and the backdrop.
-const renderAssets = ["./node_modules/ffmpeg-static/ffmpeg", "./public/fonts/**", "./public/bg/**", "./public/meme/**", "./public/sweets/**"];
+const renderAssets = ["./node_modules/ffmpeg-static/ffmpeg", "./public/fonts/**", "./public/bg/**", "./public/meme/**", "./public/sweets/**", "./public/vanakkam/**"];
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@napi-rs/canvas", "ffmpeg-static"],

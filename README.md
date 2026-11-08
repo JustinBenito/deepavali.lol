@@ -13,6 +13,7 @@ bursting, and its sparks forming **Happy Diwali Justin**.
 | `deepavali.lol/4/<name>` | Sparkler: the wish written in light, sparks flying |
 | `deepavali.lol/5/<name>` | Mithai: a wreath of twenty Diwali sweets pops in around the wish |
 | `deepavali.lol/6/<name>` | Dhamaka: a comic-book ladi goes off, BOOM! bubbles, title slam |
+| `deepavali.lol/7/<name>` | Vanakkam: the folded-hands meme against a fireworks sky, 💣 on each A, the name in fire |
 
 `deepavali.lol/2` (no name) shows that style for "Everyone".
 
@@ -53,7 +54,7 @@ video before they paste it anywhere.
 ```
 lib/variants.ts      every greeting type: URL prefix, preview text, form copy
 lib/scenes/index.ts  every type's scene: duration, fonts, images, constructor
-lib/scenes/*.ts      diya, rangoli, sparkler, mithai, dhamaka
+lib/scenes/*.ts      diya, rangoli, sparkler, mithai, dhamaka, vanakkam
 lib/kit.ts           shared helpers for scenes (seeded random, easing, glows, text fit)
 lib/scene.ts         the rocket greeting (landscape + portrait layouts)
 lib/meme.ts          the /1 meme
