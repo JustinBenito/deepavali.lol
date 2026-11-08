@@ -4,7 +4,7 @@ import { storedUrl } from "./og";
 import { requestOrigin } from "./origin";
 import { H, W } from "./scene";
 import { VIDEO_H, VIDEO_W } from "./render";
-import { pathPrefix, type Variant } from "./variants";
+import { pathPrefix, VARIANT_INFO, type Variant } from "./variants";
 
 export async function siteUrl() {
   const { origin, site } = requestOrigin(await headers());
@@ -20,11 +20,9 @@ export async function greetingMetadata(name: string, slug: string, variant: Vari
   const [videoStored, posterStored] = await Promise.all([storedUrl("mp4", name, variant), storedUrl("jpg", name, variant)]);
   const video = videoStored ?? `${base}/og${prefix}/${file}.mp4`;
   const poster = posterStored ?? `${base}/og${prefix}/${file}.jpg`;
-  const title = `Happy Diwali${name ? ` ${name}` : ""}! ${variant === "meme" ? "💥🔥" : "🪔✨"}`;
-  const description =
-    variant === "meme"
-      ? `Mass Diwali wishes, guns blazing. Send one to someone at ${site}`
-      : `A little rocket, launched just for you. Send one to someone you love at ${site}`;
+  const info = VARIANT_INFO[variant];
+  const title = `Happy Diwali${name ? ` ${name}` : ""}! ${info.emoji}`;
+  const description = info.blurb.replace("{site}", site);
 
   return {
     metadataBase: new URL(base),

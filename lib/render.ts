@@ -5,20 +5,16 @@ import os from "node:os";
 import path from "node:path";
 import { createCanvas, GlobalFonts, loadImage, type Image } from "@napi-rs/canvas";
 import ffmpegStatic from "ffmpeg-static";
-import { createMemeScene, FONT_MEME, MEME_DURATION, MEME_POSTER_TIME } from "./meme";
-import { createScene, DURATION, FONT_HEAVY, FONT_SEMI, FPS, H, POSTER_TIME, W } from "./scene";
+import { FPS, H, W } from "./scene";
+import { SCENES } from "./scenes";
 import type { Variant } from "./variants";
 
 export { VARIANTS, type Variant } from "./variants";
 
-// Bump when the animation changes so stored renders are replaced.
-export const RENDER_VERSION = "v11";
+// Bump when a scene changes so stored renders are replaced.
+export const RENDER_VERSION = "v13";
 
-const TIMING: Record<Variant, { duration: number; poster: number }> = {
-  diwali: { duration: DURATION, poster: POSTER_TIME },
-  meme: { duration: MEME_DURATION, poster: MEME_POSTER_TIME },
-};
-export const totalFrames = (v: Variant) => Math.round(TIMING[v].duration * FPS);
+export const totalFrames = (v: Variant) => Math.round(SCENES[v].duration * FPS);
 
 // The video is rendered smaller than the scene's 1280x720 design size: previews
 // are shown small, and it keeps encode time and file size down.
@@ -26,32 +22,25 @@ export const VIDEO_SCALE = 0.75;
 export const VIDEO_W = W * VIDEO_SCALE;
 export const VIDEO_H = H * VIDEO_SCALE;
 
-let fontsReady = false;
-function ensureFonts() {
-  if (fontsReady) return;
-  const dir = path.join(/* turbopackIgnore: true */ process.cwd(), "public", "fonts");
-  GlobalFonts.registerFromPath(path.join(dir, "Poppins-ExtraBold.ttf"), FONT_HEAVY);
-  GlobalFonts.registerFromPath(path.join(dir, "Poppins-SemiBold.ttf"), FONT_SEMI);
-  GlobalFonts.registerFromPath(path.join(dir, "Bungee-Regular.ttf"), FONT_MEME);
-  fontsReady = true;
-}
+const publicFile = (...parts: string[]) => path.join(/* turbopackIgnore: true */ process.cwd(), "public", ...parts);
 
+const registered = new Set<string>();
 const images = new Map<string, Promise<Image>>();
-function publicImage(...parts: string[]) {
-  const file = path.join(/* turbopackIgnore: true */ process.cwd(), "public", ...parts);
-  let img = images.get(file);
-  if (!img) images.set(file, (img = loadImage(file)));
+function publicImage(url: string) {
+  let img = images.get(url);
+  if (!img) images.set(url, (img = loadImage(publicFile(...url.split("/").filter(Boolean)))));
   return img as unknown as Promise<CanvasImageSource>;
 }
 
 async function makeScene(name: string, variant: Variant) {
-  ensureFonts();
-  const factory = (w: number, h: number) => createCanvas(w, h);
-  if (variant === "meme") {
-    const [hero, sky] = await Promise.all([publicImage("meme", "hero.png"), publicImage("meme", "sky.jpg")]);
-    return createMemeScene(name, factory, hero, sky);
+  const def = SCENES[variant];
+  for (const [family, file] of def.fonts) {
+    if (registered.has(family)) continue;
+    GlobalFonts.registerFromPath(publicFile("fonts", file), family);
+    registered.add(family);
   }
-  return createScene(name, factory, await publicImage("bg", "skyline.jpg"));
+  const imgs = await Promise.all(def.images("landscape").map(publicImage));
+  return def.create(name, (w, h) => createCanvas(w, h), imgs, "landscape");
 }
 
 function ffmpegBinary() {
@@ -93,7 +82,7 @@ async function withTmp<T>(fn: (dir: string) => Promise<T>) {
 export async function renderPoster(name: string, variant: Variant) {
   const scene = await makeScene(name, variant);
   const canvas = createCanvas(W, H);
-  scene.draw(canvas.getContext("2d") as unknown as CanvasRenderingContext2D, TIMING[variant].poster);
+  scene.draw(canvas.getContext("2d") as unknown as CanvasRenderingContext2D, SCENES[variant].poster);
   return canvas.encode("jpeg", 86);
 }
 

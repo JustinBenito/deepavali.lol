@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { track } from "@vercel/analytics";
 import { formatName, slugify } from "@/lib/scene";
-import { pathPrefix, type Variant } from "@/lib/variants";
+import { pathPrefix, VARIANT_INFO, type Variant } from "@/lib/variants";
 import { celebrate } from "./celebrate";
 
 type Made = { name: string; url: string; copied: boolean; status: "preparing" | "ready" };
@@ -44,7 +44,7 @@ export function SendOn({ variant = "diwali" }: { variant?: Variant }) {
       .finally(() => setMade((m) => (m && m.url === url ? { ...m, status: "ready" } : m)));
   }
 
-  const words = (variant === "meme" ? "Now send one to your gang" : "Now send one to someone you love").split(" ");
+  const words = VARIANT_INFO[variant].ask.split(" ");
   return (
     <div className="send-on">
       <h2 aria-label={words.join(" ")}>
@@ -58,7 +58,7 @@ export function SendOn({ variant = "diwali" }: { variant?: Variant }) {
         <form className={`maker${nudge ? " nudge" : ""}`} onSubmit={light}>
           <input ref={input} value={value} onChange={(e) => setValue(e.target.value)} placeholder="Their name" maxLength={24} aria-label="Their name" />
           <button ref={button} type="submit" className="btn">
-            {variant === "meme" ? "Fire it to them" : "Light their rocket"}
+            {VARIANT_INFO[variant].button}
           </button>
         </form>
       ) : (

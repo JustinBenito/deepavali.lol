@@ -8,6 +8,13 @@ bursting, and its sparks forming **Happy Diwali Justin**.
 | --- | --- |
 | `deepavali.lol/<name>` | The rocket greeting: launch, zoom-out, burst, sparks form the wish |
 | `deepavali.lol/1/<name>` | The meme: poster lettering and a fan of guns firing festive tracers |
+| `deepavali.lol/2/<name>` | Diya: a single diya lights up, the wish revealed in gold script |
+| `deepavali.lol/3/<name>` | Rangoli: a mandala pours itself ring by ring in coloured powder |
+| `deepavali.lol/4/<name>` | Sparkler: the wish written in light, sparks flying |
+| `deepavali.lol/5/<name>` | Mithai: a wreath of twenty Diwali sweets pops in around the wish |
+| `deepavali.lol/6/<name>` | Dhamaka: a comic-book ladi goes off, BOOM! bubbles, title slam |
+
+`deepavali.lol/2` (no name) shows that style for "Everyone".
 
 After the wish plays, the page asks for *their name*. One click copies their
 link, fires a burst of fireworks from the button, and renders their preview
@@ -44,7 +51,10 @@ video before they paste it anywhere.
 ### Files
 
 ```
-lib/variants.ts      every greeting type and its URL prefix
+lib/variants.ts      every greeting type: URL prefix, preview text, form copy
+lib/scenes/index.ts  every type's scene: duration, fonts, images, constructor
+lib/scenes/*.ts      diya, rangoli, sparkler, mithai, dhamaka
+lib/kit.ts           shared helpers for scenes (seeded random, easing, glows, text fit)
 lib/scene.ts         the rocket greeting (landscape + portrait layouts)
 lib/meme.ts          the /1 meme
 lib/render.ts        server rendering: fonts, assets, frames → ffmpeg
@@ -53,66 +63,73 @@ lib/store.ts         Cloudflare R2 (S3 API)
 lib/meta.ts          Open Graph / Twitter tags
 components/Player    plays a scene in the browser, reveals the "send one" form
 components/Share     their name → copy link + fireworks + prepare preview
-app/og/…/route.ts    the og:video / og:image endpoints
+app/[name]/…         /<name> and /<prefix>/<name> pages
+app/og/[...path]     the og:video / og:image endpoints for every type
 app/api/chunk        renders one slice of frames (HMAC-signed, internal)
 app/api/prepare      renders a name's image + video ahead of sharing
 ```
 
 ## Add a new greeting type
 
-Say you want `deepavali.lol/2/<name>`.
+Say you want `deepavali.lol/7/<name>`. It takes three files; routes, OG images,
+video rendering, storage and the send form pick it up from the registry.
 
-**1. Write the scene**: `lib/sparkler.ts`. A scene is just a function of time:
+**1. Write the scene**: `lib/scenes/confetti.ts`. A scene is a function of time:
 
 ```ts
-export const SPARKLER_DURATION = 6;    // seconds of video
-export const SPARKLER_POSTER_TIME = 4; // frame used for og:image
-export const SPARKLER_CTA_TIME = 3.5;  // when the page reveals the form
+import { seeded, W, H, type Ctx, type MakeCanvas, type Scene } from "../kit";
 
-export function createSparklerScene(name: string, makeCanvas: CanvasFactory, ...assets: CanvasImageSource[]) {
-  // precompute anything expensive here (text layouts, sprites, particle paths)
-  function draw(ctx: CanvasRenderingContext2D, t: number, scale = 1) {
+export const CONFETTI = { duration: 6, poster: 4.5, cta: 4 }; // seconds: video length, og:image frame, form reveal
+export const FONT_COMIC = "DeepComic";
+
+export function createConfettiScene(name: string, makeCanvas: MakeCanvas): Scene {
+  const rand = seeded("confetti:" + name.toLowerCase()); // never Math.random()
+  // precompute anything expensive here: text layouts, sprites, particle paths
+  function draw(ctx: Ctx, t: number, scale = 1) {
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    // draw the 1280×720 frame at time t; never depend on the previous frame
+    // draw the 1280×720 frame at time t, without depending on the previous frame
   }
-  return { draw, name, textBottom: 720 };
+  return { draw, name, textBottom: 480 };
 }
 ```
 
-Keep `draw` deterministic: same name and `t`, same pixels. Use a seeded random
-(see `mulberry32` in `lib/scene.ts`), never `Math.random()`. Each chunk renders
-its frames independently.
+`draw(ctx, t)` must be deterministic: the same name and `t` give the same pixels.
+The server renders a video as 12 chunks in parallel, so any frame has to be
+drawable on its own. Look at `lib/scenes/sparkler.ts` (particles spawned on a
+fixed timeline), `lib/scenes/dhamaka.ts` (events at set times) or
+`lib/scenes/mithai.ts` (drawing from an image atlas) for patterns.
 
-**2. Register it** in `lib/variants.ts`:
+**2. Register the type** in `lib/variants.ts`:
 
 ```ts
-export const VARIANTS = ["diwali", "meme", "sparkler"] as const;
-export const PREFIX = { diwali: "", meme: "1", sparkler: "2" };
+export const VARIANTS = [..., "confetti"] as const;
+
+confetti: {
+  prefix: "7",
+  emoji: "🎉",
+  blurb: "Confetti for you! Send some at {site}", // link preview description
+  ask: "Throw confetti at someone",               // heading over the form
+  button: "Throw it",
+},
 ```
 
-**3. Teach the server to render it** in `lib/render.ts`:
+**3. Register the scene** in `lib/scenes/index.ts`:
 
-- add `sparkler: { duration: SPARKLER_DURATION, poster: SPARKLER_POSTER_TIME }` to `TIMING`
-- add a branch in `makeScene` that loads its assets with `publicImage(...)`
-- register any new font in `ensureFonts`
-
-Put images in `public/<something>/` and add that folder to `renderAssets` in
-`next.config.ts`, so serverless functions bundle it.
-
-**4. Teach the browser to play it** in `components/Player.tsx`. Add its images,
-font and `createSparklerScene` to the branches that pick assets and build the scene.
-
-**5. Add the routes.** Copy the meme ones and change the variant:
-
-```
-app/2/[name]/page.tsx       → greetingMetadata(name, slug, "sparkler"), <Player variant="sparkler">, <SendOn variant="sparkler">
-app/og/2/[file]/route.ts    → ogResponse(req, file, "sparkler")
+```ts
+confetti: {
+  ...CONFETTI,
+  fonts: [[FONT_COMIC, "Bangers-Regular.ttf"]],  // files in public/fonts
+  images: () => [],                              // public URLs, e.g. ["/confetti/bg.jpg"]
+  create: (name, mk) => createConfettiScene(name, mk),
+},
 ```
 
-Then add `"/og/2/[file]"` to `outputFileTracingIncludes` in `next.config.ts`.
+Put new fonts in `public/fonts/`. Put images in a `public/` folder and add that
+folder to `renderAssets` in `next.config.ts`, so serverless functions bundle it.
 
-Storage paths, chunk rendering, `/api/prepare`, the send form, and the
-fallback all work from the variant name; nothing else needs changing.
+Optional: `loopFrom` keeps the page animation looping (the meme uses it),
+`portrait` and `overlay` are how the rocket greeting gets its phone layout and
+its form over the scene.
 
 > Changed how an existing type looks? Bump `RENDER_VERSION` in `lib/render.ts`
 > so stored videos are re-rendered instead of reused.
